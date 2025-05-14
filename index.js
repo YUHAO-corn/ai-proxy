@@ -11,11 +11,11 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// 从环境变量中获取API密钥和模型ID
-// 在Cloud Run部署时，你需要配置这些环境变量
-const DOUBAO_API_KEY = process.env.DOUBAO_API_KEY;
-const DOUBAO_MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-1.5-pro-32k-250115'; // 默认模型ID
-const DOUBAO_API_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+// 环境变量和API配置 - 更新为通义千问 (Qwen)
+// 在Cloud Run部署时，你需要配置这些新的环境变量
+const QWEN_API_KEY = process.env.QWEN_API_KEY; // 或者 DASHSCOPE_API_KEY，取决于你如何命名
+const QWEN_MODEL_ID = process.env.QWEN_MODEL_ID || 'qwen-plus'; // 默认使用 qwen-plus，文档示例中是这个
+const QWEN_API_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 // 健康检查端点
 app.get('/health', (req, res) => {
@@ -23,47 +23,45 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK from health check'); // 修改返回信息以便区分
 });
 
-// AI代理端点
-app.post('/api/proxy/doubao', async (req, res) => {
-  console.log('Handling /api/proxy/doubao request'); // 新增日志
-  if (!DOUBAO_API_KEY) {
-    console.error('Error: DOUBAO_API_KEY is not configured.');
+// AI代理端点 - 更新为通义千问 (Qwen)
+app.post('/api/proxy/qwen', async (req, res) => { // 更改端点路径以反映模型变化 (可选但推荐)
+  console.log('Handling /api/proxy/qwen request'); 
+  if (!QWEN_API_KEY) {
+    console.error('Error: QWEN_API_KEY is not configured.');
     return res.status(500).json({ error: 'AI service not configured: API key missing.' });
   }
 
   try {
-    const requestData = req.body; // 前端发送过来的请求体
+    const requestData = req.body; 
     
-    console.log('Request body for Doubao proxy:', JSON.stringify(requestData, null, 2)); // 打印请求体
+    console.log('Request body for Qwen proxy:', JSON.stringify(requestData, null, 2));
 
-    // 构造向豆包API的请求
-    const doubaoResponse = await axios.post(DOUBAO_API_BASE_URL, {
-      model: DOUBAO_MODEL_ID,
-      messages: requestData.messages, // 假设前端会传来 messages 数组
-      stream: requestData.stream || false, // 是否流式输出，默认为false
-      // 根据豆包API文档，可以传递其他参数，例如 temperature, top_p 等
-      // 我们直接透传前端的参数，或者在这里设定一些默认值/限制
+    // 构造向通义千问API的请求
+    const qwenResponse = await axios.post(QWEN_API_BASE_URL, {
+      model: QWEN_MODEL_ID, // 使用Qwen的模型ID
+      messages: requestData.messages, 
+      stream: requestData.stream || false, 
       temperature: requestData.temperature,
       top_p: requestData.top_p,
-      max_tokens: requestData.max_tokens,
-      // ... 其他豆包API支持的参数
+      max_tokens: requestData.max_tokens, // 注意：Qwen API文档中没有明确列出max_tokens，但兼容OpenAI的接口通常支持。如果出错，可能需要移除或查阅更详细的Qwen参数文档。
+      // parameters: requestData.parameters // Qwen 可能有自己独特的参数结构，比如放在 parameters 对象里，具体需查阅其详细API文档
     }, {
       headers: {
-        'Authorization': `Bearer ${DOUBAO_API_KEY}`,
+        'Authorization': `Bearer ${QWEN_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
 
-    console.log('Received response from Doubao API. Status:', doubaoResponse.status);
-    res.status(doubaoResponse.status).json(doubaoResponse.data);
+    console.log('Received response from Qwen API. Status:', qwenResponse.status);
+    res.status(qwenResponse.status).json(qwenResponse.data);
 
   } catch (error) {
-    console.error('Error proxying to Doubao API. Message:', error.message);
+    console.error('Error proxying to Qwen API. Message:', error.message);
     if (error.response) {
-      console.error('Doubao API Error Status:', error.response.status);
-      console.error('Doubao API Error Data:', JSON.stringify(error.response.data, null, 2));
+      console.error('Qwen API Error Status:', error.response.status);
+      console.error('Qwen API Error Data:', JSON.stringify(error.response.data, null, 2));
       res.status(error.response.status).json({ 
-        error: 'Error calling Doubao API.', 
+        error: 'Error calling Qwen API.', 
         details: error.response.data 
       });
     } else {
