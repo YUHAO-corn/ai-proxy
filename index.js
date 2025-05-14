@@ -80,3 +80,5 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`AI Proxy Service with enhanced logging listening on port ${PORT}`);
 }); 
+
+// Force redeploy
