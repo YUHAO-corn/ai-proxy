@@ -1,11 +1,46 @@
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors'); // 引入cors包
 
 const app = express();
 
+// --- 精准的CORS配置 ---
+// 定义允许的来源列表
+const allowedOrigins = [
+  'https://aetherflow-app.com',
+  'https://aetherflow-app.github.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  // 如果扩展程序有固定的来源ID，也应该加在这里
+  // 'chrome-extension://your-extension-id' 
+];
+
+// 配置CORS选项
+const corsOptions = {
+  origin: function (origin, callback) {
+    // 对于非浏览器请求（如服务器到服务器、Postman等），origin是undefined
+    // 允许没有origin的请求（或在白名单中的请求）
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS: Blocked origin -> ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'], // 我们只需要允许GET, POST, OPTIONS
+  allowedHeaders: ['Content-Type', 'Authorization'], // 明确指定允许的头
+  credentials: true
+};
+
+// 应用CORS中间件
+app.use(cors(corsOptions));
+
+// 为所有路由启用OPTIONS预检请求的自动处理
+app.options('*', cors(corsOptions)); 
+
 // 日志中间件 - 打印所有接收到的请求
 app.use((req, res, next) => {
-  console.log(`Received request: ${req.method} ${req.url}`);
+  console.log(`Received request: ${req.method} ${req.url} from origin: ${req.headers.origin}`);
   next();
 });
 
