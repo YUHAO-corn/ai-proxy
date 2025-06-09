@@ -11,8 +11,9 @@ const allowedOrigins = [
   'https://aetherflow-app.github.io',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  // 如果扩展程序有固定的来源ID，也应该加在这里
-  // 'chrome-extension://your-extension-id' 
+  // 关键修复：添加你的Chrome扩展程序的固定来源
+  'chrome-extension://blphakmcnfdnmmbnakmceflegabgdhjk',
+  'chrome-extension://ldpadjcdbfndeghcklogoppmbnmphbki' 
 ];
 
 // 配置CORS选项
@@ -41,6 +42,10 @@ app.options('*', cors(corsOptions));
 // 日志中间件 - 打印所有接收到的请求
 app.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.url} from origin: ${req.headers.origin}`);
+  // 打印请求体（如果存在且是JSON）
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  }
   next();
 });
 
